@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streakly — Comeback Screen Prototype</title>
+<style>
+  :root {
+    --bg: #f4f3f1;
+    --card: #ffffff;
+    --ink: #1c1b1f;
+    --ink-soft: #6b6870;
+    --accent: #ff7a45;
+    --accent-soft: #ffe4d6;
+    --freeze: #3aa0ff;
+    --freeze-soft: #dcedff;
+    --success: #2fa66b;
+    --success-soft: #d9f3e6;
+    --line: #eae7e2;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+  }
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .phone {
+    width: 390px;
+    height: 780px;
+    background: var(--card);
+    border-radius: 40px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.18);
+    overflow: hidden;
+    position: relative;
+    border: 10px solid #111;
+  }
+  .statusbar {
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .screen {
+    position: absolute;
+    top: 34px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 20px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    overflow-y: auto;
+  }
+  .screen.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #ddd;
+  }
+
+  .spacer { flex: 1; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    border: none;
+    border-radius: 14px;
+    padding: 15px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: #fff;
+  }
+  .btn-accent {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-freeze {
+    background: var(--freeze);
+    color: #fff;
+  }
+  .btn-done {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  /* Comeback screen */
+  .comeback-header {
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .comeback-header h1 {
+    font-size: 20px;
+    margin: 0 0 6px;
+    line-height: 1.25;
+  }
+  .comeback-header p {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0;
+    line-height: 1.4;
+  }
+  .stat-card {
+    background: var(--accent-soft);
+    border-radius: 18px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .stat-card .flame { font-size: 30px; }
+  .stat-num {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .option-card {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 16px 16px;
+    margin-bottom: 12px;
+  }
+  .option-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .option-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .option-icon.lesson { background: var(--accent-soft); }
+  .option-icon.freeze { background: var(--freeze-soft); }
+  .option-title { font-size: 14.5px; font-weight: 700; margin: 0; }
+  .option-sub { font-size: 12.5px; color: var(--ink-soft); margin: 2px 0 0; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--success-soft);
+    color: var(--success);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 14px;
+    border-radius: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .option-divider {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+
+  /* Home screen */
+  .streak-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0eeea;
+    color: var(--ink-soft);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+    width: fit-content;
+  }
+  .broken-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 22px 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .broken-flame {
+    font-size: 40px;
+    filter: grayscale(1);
+    opacity: 0.55;
+    margin-bottom: 8px;
+  }
+  .broken-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .broken-sub {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0;
+    line-height: 1.4;
+  }
+  .home-lessoncard {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    opacity: 0.6;
+  }
+  .home-lessoncard .dot {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: #eee; flex-shrink: 0;
+  }
+  .home-lessoncard .txt small { color: var(--ink-soft); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-soft);
+    font-weight: 600;
+    text-decoration: underline;
+    padding: 10px;
+  }
+
+  .ineligible-note {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    background: #f4f3f1;
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .eligibility-preview {
+    text-align: center;
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  .eligibility-preview a { color: var(--ink-soft); }
+
+  /* Lesson screen */
+  .lesson-card {
+    background: linear-gradient(135deg, #2b2a2f, #1c1b1f);
+    color: #fff;
+    border-radius: 20px;
+    padding: 26px 20px;
+    text-align: center;
+    margin: 20px 0 22px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .lesson-card .tag {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #ffb08a;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .lesson-card h2 {
+    font-size: 19px;
+    margin: 0 0 10px;
+    line-height: 1.3;
+  }
+  .lesson-card p {
+    font-size: 13.5px;
+    color: #cfcdd2;
+    margin: 0 0 20px;
+    line-height: 1.4;
+  }
+  .progress-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 1.6s linear;
+  }
+  .progress-time {
+    font-size: 12px;
+    color: #a8a6ad;
+    margin-top: 8px;
+  }
+
+  .toast {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    bottom: 22px;
+    background: var(--ink);
+    color: #fff;
+    padding: 13px 16px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .caption {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin-top: 18px;
+    max-width: 390px;
+  }
+  .rebuild-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  /* Scenario switcher */
+  .scenario-switcher {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .scenario-btn {
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .scenario-btn.active {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+
+  /* Celebration screen — independent surface, not tied to a break */
+  .celebrate-card {
+    text-align: center;
+  }
+  .celebrate-flame {
+    font-size: 64px;
+    margin-bottom: 10px;
+  }
+  .celebrate-day {
+    font-size: 40px;
+    font-weight: 800;
+    margin-bottom: 14px;
+  }
+  .celebrate-copy {
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    max-width: 280px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div>
+    <div class="scenario-switcher">
+      <button class="scenario-btn active" id="scenario-comeback-btn" onclick="showScenario('comeback')">Comeback (Tom, broke a 12-day streak)</button>
+      <button class="scenario-btn" id="scenario-celebration-btn" onclick="showScenario('celebration')">Celebration (Amara, Day 4, active streak)</button>
+    </div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+
+      <!-- HOME: acknowledged broken streak -->
+      <div class="screen active" id="screen-home">
+        <div class="topline">
+          <div class="brand">Streakly</div>
+          <div class="avatar"></div>
+        </div>
+        <div class="streak-chip">🔥 0-day streak</div>
+        <div class="broken-card">
+          <div class="broken-flame">🔥</div>
+          <p class="broken-title">Your 12-day streak ended 2 days ago</p>
+          <p class="broken-sub">You built that up one day at a time. Here's how to pick it back up.</p>
+        </div>
+        <div class="home-lessoncard">
+          <div class="dot"></div>
+          <div class="txt"><small>Today's regular lesson — locked until you're back on track</small></div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-accent" onclick="goTo('screen-comeback')">See your comeback options</button>
+      </div>
+
+      <!-- COMEBACK SCREEN -->
+      <div class="screen" id="screen-comeback">
+        <div class="topline">
+          <div class="brand">Streakly</div>
+          <div class="avatar"></div>
+        </div>
+        <div class="comeback-header">
+          <h1>Welcome back. Let's pick up where you left off.</h1>
+          <p>You didn't lose the 12 days you put in — here's your path back.</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flame">🏆</div>
+          <div>
+            <div class="stat-num" id="best-stat">12 days</div>
+            <div class="stat-label">Your best streak</div>
+          </div>
+        </div>
+
+        <div class="option-card">
+          <div class="option-top">
+            <div class="option-icon lesson">📘</div>
+            <div>
+              <p class="option-title">60-second comeback lesson</p>
+              <p class="option-sub">A short win to get moving again today</p>
+            </div>
+          </div>
+          <button class="btn btn-accent" id="lesson-btn" onclick="goTo('screen-lesson')">Start lesson</button>
+
+          <div class="option-top option-divider">
+            <div class="option-icon freeze">🧊</div>
+            <div>
+              <p class="option-title">Restore your streak</p>
+              <p class="option-sub" id="freeze-sub">Available for streaks of 7+ days, once every 90 days</p>
+            </div>
+          </div>
+          <div id="freeze-control"><button class="btn btn-freeze" id="freeze-btn" onclick="useFreeze()">Use streak freeze</button></div>
+        </div>
+
+        <p class="eligibility-preview"><a href="#" onclick="toggleEligibilityDemo(); return false;" id="eligibility-toggle">Preview: mark this account as having used a freeze in the last 90 days</a></p>
+
+        <div class="spacer"></div>
+        <button class="btn btn-ghost" onclick="dismissToHome()">Not right now</button>
+      </div>
+
+      <!-- LESSON SCREEN -->
+      <div class="screen" id="screen-lesson">
+        <div class="topline">
+          <div class="brand">Streakly</div>
+          <div class="avatar"></div>
+        </div>
+        <div class="lesson-card">
+          <div class="tag">Comeback lesson</div>
+          <h2 id="lesson-heading">A quick refresher, sized for today</h2>
+          <p id="lesson-body">Just one small step. No pressure to catch up on everything at once — just today.</p>
+          <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+          <div class="progress-time" id="progress-time">1:00</div>
+        </div>
+        <button class="btn btn-primary" id="lesson-action-btn" onclick="startLessonProgress()">Begin — 60 seconds</button>
+      </div>
+
+      <!-- CELEBRATION SCREEN — independent surface, shown to early-tenure users on an active streak, unrelated to any break -->
+      <div class="screen" id="screen-celebration">
+        <div class="topline">
+          <div class="brand">Streakly</div>
+          <div class="avatar"></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="celebrate-card">
+          <div class="celebrate-flame">🔥</div>
+          <div class="celebrate-day">Day 4</div>
+          <p class="celebrate-copy">Showing up 4 days in a row is the hardest part of building this — and you're already doing it.</p>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-accent" onclick="showToast('🔥 Keep it up!')">Nice</button>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+    <p class="caption">Comeback: use the streak freeze and/or complete the lesson. Celebration: an independent surface for early-tenure users, unrelated to any break.</p>
+    <p class="rebuild-note"><a href="#" onclick="resetAll(); return false;">Reset prototype to start over</a></p>
+  </div>
+</div>
+
+<script>
+  const state = {
+    previousBest: 12,
+    freezeOn: false,
+    lessonDone: false,
+    freezeUsedRecently: false, // demo toggle simulating the 90-day cooldown
+  };
+
+  function currentStreak() {
+    if (state.lessonDone) return state.previousBest + 1;
+    if (state.freezeOn) return state.previousBest;
+    return 0;
+  }
+
+  function freezeEligible() {
+    return state.previousBest >= 7 && !state.freezeUsedRecently;
+  }
+
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'screen-comeback') renderComeback();
+    if (id === 'screen-lesson') resetLessonScreen();
+  }
+
+  function showScenario(name) {
+    document.getElementById('scenario-comeback-btn').classList.toggle('active', name === 'comeback');
+    document.getElementById('scenario-celebration-btn').classList.toggle('active', name === 'celebration');
+    goTo(name === 'comeback' ? 'screen-home' : 'screen-celebration');
+  }
+
+  function dismissToHome() {
+    goTo('screen-home');
+  }
+
+  function toggleEligibilityDemo() {
+    state.freezeUsedRecently = !state.freezeUsedRecently;
+    const link = document.getElementById('eligibility-toggle');
+    link.textContent = state.freezeUsedRecently
+      ? 'Preview: clear the 90-day freeze cooldown'
+      : 'Preview: mark this account as having used a freeze in the last 90 days';
+    renderComeback();
+  }
+
+  function renderComeback() {
+    const lessonBtn = document.getElementById('lesson-btn');
+    const freezeControl = document.getElementById('freeze-control');
+    const header = document.querySelector('#screen-comeback .comeback-header h1');
+    const sub = document.querySelector('#screen-comeback .comeback-header p');
+
+    if (state.lessonDone && lessonBtn) {
+      lessonBtn.outerHTML = '<div class="status-pill" id="lesson-btn">✓ Today\'s comeback lesson complete</div>';
+    }
+
+    if (state.freezeOn) {
+      freezeControl.innerHTML = '<div class="status-pill">✓ Streak restored — you\'re back at ' + state.previousBest + ' days</div>';
+    } else if (state.lessonDone) {
+      freezeControl.innerHTML = '<button class="btn btn-freeze" disabled>Not needed — you\'re already back</button>';
+    } else if (!freezeEligible()) {
+      freezeControl.innerHTML = '<p class="ineligible-note">Streak freeze unavailable — requires a streak of 7+ days and no freeze used in the past 90 days.</p>';
+    } else {
+      freezeControl.innerHTML = '<button class="btn btn-freeze" id="freeze-btn" onclick="useFreeze()">Use streak freeze</button>';
+    }
+
+    if (state.lessonDone) {
+      header.textContent = "You're officially back.";
+      sub.textContent = "Today counted — you're at " + currentStreak() + " days.";
+    } else if (state.freezeOn) {
+      header.textContent = "Your streak is back.";
+      sub.textContent = "Finish today's comeback lesson to keep it moving.";
+    } else {
+      header.textContent = "Welcome back. Let's pick up where you left off.";
+      sub.textContent = "You didn't lose the 12 days you put in — here's your path back.";
+    }
+  }
+
+  function useFreeze() {
+    if (state.freezeOn || state.lessonDone || !freezeEligible()) return;
+    state.freezeOn = true;
+    showToast("Streak restored! You're back at " + state.previousBest + " days.");
+    renderComeback();
+  }
+
+  function resetLessonScreen() {
+    document.getElementById('progress-fill').style.width = '0%';
+    document.getElementById('progress-time').textContent = '1:00';
+    const btn = document.getElementById('lesson-action-btn');
+    btn.textContent = 'Begin — 60 seconds';
+    btn.disabled = false;
+    btn.onclick = startLessonProgress;
+  }
+
+  function startLessonProgress() {
+    const btn = document.getElementById('lesson-action-btn');
+    btn.disabled = true;
+    btn.textContent = 'In progress…';
+    const fill = document.getElementById('progress-fill');
+    const time = document.getElementById('progress-time');
+    requestAnimationFrame(() => { fill.style.width = '100%'; });
+    let remaining = 60;
+    time.textContent = '1:00';
+    const interval = setInterval(() => {
+      remaining -= 4;
+      const s = Math.max(remaining, 0);
+      time.textContent = '0:' + (s < 10 ? '0' + s : s);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        finishLesson();
+      }
+    }, 100);
+  }
+
+  function finishLesson() {
+    state.lessonDone = true;
+    const btn = document.getElementById('lesson-action-btn');
+    btn.textContent = 'Lesson complete ✓';
+    setTimeout(() => {
+      goTo('screen-comeback');
+      showToast("Nice! You're back at " + currentStreak() + " days.");
+    }, 500);
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  function resetAll() {
+    state.previousBest = 12;
+    state.freezeOn = false;
+    state.lessonDone = false;
+    state.freezeUsedRecently = false;
+    location.reload();
+  }
+</script>
+
+</body>
+</html>
